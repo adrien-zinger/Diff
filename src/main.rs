@@ -8,10 +8,14 @@ fn main() {
         &['_', 'a', 'd', 'h', 'c', 'n'],
     );
     println!("Chars:\n{:?}", diff_chars);
-    //println!("u8\n{}", diff::diff(&[0_u8, 4, 5, 7, 8], &[0u8, 4, 6, 8, 9, 10]));
     let first = fs::read("first.pack").unwrap();
     let second = fs::read("second.pack").unwrap();
     let diff = diff::diff(&first, &second);
-    println!("Binaries:\n{:?}", diff);
-    diffio::write("diff.d", diff);
+    println!("\n\nBinaries:\n{:?}", diff);
+
+    println!("\n\nWrite compressed file diff first->second:\n{:?}", diff);
+    println!("(this operation remove useless informations)");
+    diffio::write("diff.d", diff.to_owned());
+    println!("\n\nGet back compressed file diff first->second:");
+    println!("{:?}", diffio::read("diff.d"));
 }

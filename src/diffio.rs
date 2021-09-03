@@ -1,34 +1,81 @@
 use std::io::Write;
-pub fn write(name: &str, mut diff: std::vec::Vec<(u8, u32, std::vec::Vec<u8>, std::vec::Vec<u8>)>) {
+use std::vec::Vec;
+
+fn get_bytes_in(number: u32) -> Vec::<u8> {
+  let mut ret = Vec::new();
+  for byte in number.to_be_bytes() {
+    if byte > 0 {
+      ret.push(byte);
+    }
+  }
+  ret
+}
+
+pub fn write(name: &str, diff: Vec<(u8, u32, Vec<u8>, Vec<u8>)>) {
   let mut res = std::vec::Vec::new();
-  for operation in diff.iter_mut() {
-    res.push(operation.0);
-    let position = operation.1.to_be_bytes();
-    // here, instead of writing 4 bytes, we can check the
-    // required size before and dump only wht we want, in the
-    // better case, we get 8 bytes less, in the worst we have
-    // only one more
-    res.push(position[0]);
-    res.push(position[1]);
-    res.push(position[2]);
-    res.push(position[3]);
-    let size_raw = (operation.2.len() as u32).to_be_bytes();
-    res.push(size_raw[0]);
-    res.push(size_raw[1]);
-    res.push(size_raw[2]);
-    res.push(size_raw[3]);
-    res.append(&mut operation.2);
-    let size_sub = (operation.3.len() as u32).to_be_bytes();
-    res.push(size_sub[0]);
-    res.push(size_sub[1]);
-    res.push(size_sub[2]);
-    res.push(size_sub[3]);
-    res.append(&mut operation.3);
+  for operation in diff.iter() {
+    let mut description = operation.0 as u8;
+    description <<= 3;
+    let mut position_bytes = get_bytes_in(operation.1);
+    description += position_bytes.len() as u8;
+    description <<= 3;
+    let mut raw_size_bytes = get_bytes_in(operation.2.len() as u32);
+    description += raw_size_bytes.len() as u8;
+    res.push(description);
+    res.append(&mut position_bytes);
+    res.append(&mut raw_size_bytes);
+    if operation.0 == 1 {
+      res.append(&mut operation.2.clone());
+    }
+    if operation.0 == 0 {
+      let mut subraw_size_bytes = get_bytes_in(operation.3.len() as u32);
+      res.push(subraw_size_bytes.len() as u8);
+      res.append(&mut subraw_size_bytes);
+      res.append(&mut operation.3.clone());
+    }
   }
   let mut file = std::fs::File::create(name).unwrap();
   file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
 }
 
-pub fn _decompress() -> std::vec::Vec<(u8, u32, std::vec::Vec<u8>, std::vec::Vec<u8>)> {
-  std::vec::Vec::new()
+pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::vec::Vec<u8>)> {
+  let mut diff_file = snap::raw::Decoder::new().decompress_vec(&std::fs::read(name).unwrap()).unwrap();
+  diff_file.reverse();
+  let mut diff = Vec::new();
+  while !diff_file.is_empty() {
+    let description = diff_file.pop().unwrap();
+    let operation = (description & 0b1100_0000) >> 6;
+    let position_bytes = (description & 0b0011_1000) >> 3;
+    let raw_size_bytes = description & 0b0000_0111;
+    let mut position = 0u32;
+    for _ in 0..position_bytes {
+      position <<= 8;
+      position += diff_file.pop().unwrap() as u32;
+    }
+    let mut raw_size = 0u32;
+    for _ in 0..raw_size_bytes {
+      raw_size <<= 8;
+      raw_size += diff_file.pop().unwrap() as u32;
+    }
+    let mut raw = Vec::new();
+    if operation == 1 {
+      for _ in 0..raw_size {
+        raw.push(diff_file.pop().unwrap());
+      }
+    }
+    let mut subraw = Vec::new();
+    if operation == 0 {
+      let subraw_size_bytes = diff_file.pop().unwrap();
+      let mut subraw_size = 0u32;
+      for _ in 0..subraw_size_bytes {
+        subraw_size <<= 8;
+        subraw_size += diff_file.pop().unwrap() as u32;
+      }
+      for _ in 0..subraw_size {
+        subraw.push(diff_file.pop().unwrap());
+      }
+    }
+    diff.push((operation, position, raw_size, raw, subraw));
+  }
+  diff
 }
