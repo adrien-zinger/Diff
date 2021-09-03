@@ -36,7 +36,7 @@ fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
 pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
     source: &[T],
     target: &[T],
-) -> Vec<(u8, u32, Vec<T>, Vec<T>)> {
+) -> Vec<(u8, u32, u32, Vec<T>, Vec<T>)> {
     let o = levenstein(source, target);
     let mut i = source.len() - 1;
     let mut j = target.len() - 1;
@@ -53,6 +53,7 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
                         ret.push((
                             raw_type,
                             (i + 1) as u32,
+                            raw.len() as u32,
                             raw.drain(..).collect(),
                             raw_sub.drain(..).collect(),
                         ));
@@ -71,6 +72,7 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
                     ret.push((
                         raw_type,
                         (i + 1) as u32,
+                        raw.len() as u32,
                         raw.drain(..).collect(),
                         raw_sub.drain(..).collect(),
                     ));
@@ -88,6 +90,7 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
                     ret.push((
                         raw_type,
                         (i + 1) as u32,
+                        raw.len() as u32,
                         raw.drain(..).collect(),
                         raw_sub.drain(..).collect(),
                     ));
@@ -101,7 +104,7 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
         }
     }
     if !(raw.is_empty() && raw_sub.is_empty()) {
-        ret.push((raw_type, (i + 1) as u32, raw, raw_sub));
+        ret.push((raw_type, (i + 1) as u32, raw.len() as u32, raw, raw_sub));
     }
     ret
 }
