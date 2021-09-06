@@ -3,24 +3,43 @@ mod diffio;
 mod apply;
 use std::fs;
 
-fn main() {
+fn human_readable(from: &str, to: &str) {
     // Human readable sample
-    let a: Vec<_> = "Je ne voudrais pas te faire perdre du temps".split("").collect();
-    let b: Vec<_> = "Je n'ai pas envie de te faire perdre ton temps precieux".split("").collect();
-    println!("Example with strings\n{}\n{}", a.join(""), b.join(""));
+    let a: Vec<_> = from.split("").collect();
+    let b: Vec<_> = to.split("").collect();
     let diff = diff::diff(&a, &b);
-    diffio::debug(&diff);
-    println!("\n\nWrite compressed diff");
     diffio::write_char("diff.d", diff);
-    diffio::debug_u8_to_char(&diffio::read("diff.d"));
+    let diff = diffio::read("diff.d");
+    let dest: Vec::<String> = apply::apply(
+        a.join("").as_bytes().to_vec(),
+        &diff).iter().map(|u| (*u as char).to_string()
+    ).collect();
+    println!("Create diff\nfrom '{}'\nto   '{}'", from, to);
+    println!("Apply and obtain '{}'\n", dest.join(""));
+}
 
-    // Binaries
-    println!("\n\nBinary example");
-    let first = fs::read("first.pack").unwrap();
-    let second = fs::read("second.pack").unwrap();
+fn binaries_files(from: &str, to: &str) {
+    println!("Binary example");
+    let first = fs::read(from).unwrap();
+    let second = fs::read(to).unwrap();
     let diff = diff::diff(&first, &second);
-    diffio::debug(&diff);
     diffio::write("diff.d", diff.to_owned());
-    println!("\n\nBinary example, read file");
-    diffio::debug(&diffio::read("diff.d"));
+    println!("Binary example, read file");
+    let diff = diffio::read("diff.d");
+    fs::write("dest.pack", apply::apply(first, &diff)).unwrap();
+}
+
+
+fn main() {
+    human_readable(
+        "Je ne voudrais pas te faire perdre du temps",
+        "Je n'ai pas envie de te faire perdre ton temps precieux"
+    );
+    human_readable(
+        "Je n'ai pas envie de te faire perdre ton temps precieux",
+        "Je ne voudrais pas te faire perdre du temps"
+    );
+    // Binaries
+    binaries_files("first.pack", "second.pack");
+    binaries_files("second.pack", "first.pack");
 }

@@ -58,12 +58,18 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
             raw_type = o[i][j];
         }
         if o[i][j] == 0 {
-            raw_type = 3;
             if source[i] != target[j] {
                 raw_type = o[i][j];
                 raw.push(source[i]);
                 raw_sub.push(target[j]);
-
+            } else if !(raw.is_empty() && raw_sub.is_empty()) {
+                ret.push((
+                    raw_type,
+                    (i + 1) as u32,
+                    raw.len() as u32,
+                    raw.drain(..).collect(),
+                    raw_sub.drain(..).collect(),
+                ));
             }
             j -= 1;
             i -= 1;

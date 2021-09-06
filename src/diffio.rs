@@ -107,7 +107,7 @@ pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::
   diff
 }
 
-pub fn debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
+pub fn _debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
   for operation in diff {
     let op_name = match operation.0 {
       0 => "substitution",
@@ -118,7 +118,7 @@ pub fn debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
   }
 }
 
-pub fn debug_u8_to_char(diff: &Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
+pub fn _debug_u8_to_char(diff: &Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
     for operation in diff {
         let op_name = match operation.0 {
             0 => "substitution",
