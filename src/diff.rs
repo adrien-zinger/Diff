@@ -43,64 +43,40 @@ pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
     let mut ret = Vec::new();
     let mut raw = Vec::new();
     let mut raw_sub = Vec::new();
-    let mut raw_type = 3_u8;
+    let mut raw_type = o[i][j];
     while i > 0 && j > 0 {
+        if raw_type != o[i][j] {
+            if !(raw.is_empty() && raw_sub.is_empty()) {
+                ret.push((
+                    raw_type,
+                    (i + 1) as u32,
+                    raw.len() as u32,
+                    raw.drain(..).collect(),
+                    raw_sub.drain(..).collect(),
+                ));
+            }
+            raw_type = o[i][j];
+        }
         if o[i][j] == 0 {
+            raw_type = 3;
             if source[i] != target[j] {
-                // Substitute
-                if raw_type != 0 {
-                    if !(raw.is_empty() && raw_sub.is_empty()) {
-                        ret.push((
-                            raw_type,
-                            (i + 1) as u32,
-                            raw.len() as u32,
-                            raw.drain(..).collect(),
-                            raw_sub.drain(..).collect(),
-                        ));
-                    }
-                    raw_type = 0;
-                }
+                raw_type = o[i][j];
                 raw.push(source[i]);
                 raw_sub.push(target[j]);
+
             }
             j -= 1;
             i -= 1;
         } else if o[i][j] == 1 {
             // insert
-            if raw_type != 1 {
-                if !(raw.is_empty() && raw_sub.is_empty()) {
-                    ret.push((
-                        raw_type,
-                        (i + 1) as u32,
-                        raw.len() as u32,
-                        raw.drain(..).collect(),
-                        raw_sub.drain(..).collect(),
-                    ));
-                }
-                raw.drain(..);
-                raw_sub.drain(..);
-                raw_type = 1;
-            }
-            raw.push(target[j]);
-            i -= 1;
-        } else if o[i][j] == 2 {
-            // delete
-            if raw_type != 2 {
-                if !(raw.is_empty() && raw_sub.is_empty()) {
-                    ret.push((
-                        raw_type,
-                        (i + 1) as u32,
-                        raw.len() as u32,
-                        raw.drain(..).collect(),
-                        raw_sub.drain(..).collect(),
-                    ));
-                }
-                raw.drain(..);
-                raw_sub.drain(..);
-                raw_type = 2;
-            }
+            raw_type = o[i][j];
             raw.push(target[j]);
             j -= 1;
+        } else if o[i][j] == 2 {
+            // delete
+            raw_type = o[i][j];
+            raw.push(source[i]);
+            i -= 1;
         }
     }
     if !(raw.is_empty() && raw_sub.is_empty()) {

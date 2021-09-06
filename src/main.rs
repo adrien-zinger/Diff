@@ -1,21 +1,26 @@
 mod diff;
 mod diffio;
+mod apply;
 use std::fs;
 
 fn main() {
-    let diff_chars = diff::diff(
-        &['_', 'a', 'b', 'c', 'n'],
-        &['_', 'a', 'd', 'h', 'c', 'n'],
-    );
-    println!("Chars:\n{:?}", diff_chars);
+    // Human readable sample
+    let a: Vec<_> = "Je ne voudrais pas te faire perdre du temps".split("").collect();
+    let b: Vec<_> = "Je n'ai pas envie de te faire perdre ton temps precieux".split("").collect();
+    println!("Example with strings\n{}\n{}", a.join(""), b.join(""));
+    let diff = diff::diff(&a, &b);
+    diffio::debug(&diff);
+    println!("\n\nWrite compressed diff");
+    diffio::write_char("diff.d", diff);
+    diffio::debug_u8_to_char(&diffio::read("diff.d"));
+
+    // Binaries
+    println!("\n\nBinary example");
     let first = fs::read("first.pack").unwrap();
     let second = fs::read("second.pack").unwrap();
     let diff = diff::diff(&first, &second);
-    println!("\n\nBinaries:\n{:?}", diff);
-
-    println!("\n\nWrite compressed file diff first->second:\n{:?}", diff);
-    println!("(this operation remove useless informations)");
+    diffio::debug(&diff);
     diffio::write("diff.d", diff.to_owned());
-    println!("\n\nGet back compressed file diff first->second:");
-    println!("{:?}", diffio::read("diff.d"));
+    println!("\n\nBinary example, read file");
+    diffio::debug(&diffio::read("diff.d"));
 }

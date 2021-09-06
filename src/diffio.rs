@@ -38,6 +38,33 @@ pub fn write(name: &str, diff: Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
   file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
 }
 
+pub fn write_char(name: &str, diff: Vec<(u8, u32, u32, Vec<&str>, Vec<&str>)>) {
+  let mut res = std::vec::Vec::new();
+  for operation in diff.iter() {
+    let mut description = operation.0 as u8;
+    description <<= 3;
+    let mut position_bytes = get_bytes_in(operation.1);
+    description += position_bytes.len() as u8;
+    description <<= 3;
+    let mut raw_size_bytes = get_bytes_in(operation.3.len() as u32);
+    description += raw_size_bytes.len() as u8;
+    res.push(description);
+    res.append(&mut position_bytes);
+    res.append(&mut raw_size_bytes);
+    if operation.0 == 1 {
+      res.append(&mut operation.3.join("").as_bytes().to_vec());
+    }
+    if operation.0 == 0 {
+      let mut subraw_size_bytes = get_bytes_in(operation.3.len() as u32);
+      res.push(subraw_size_bytes.len() as u8);
+      res.append(&mut subraw_size_bytes);
+      res.append(&mut operation.4.join("").as_bytes().to_vec());
+    }
+  }
+  let mut file = std::fs::File::create(name).unwrap();
+  file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
+}
+
 pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::vec::Vec<u8>)> {
   let mut diff_file = snap::raw::Decoder::new().decompress_vec(&std::fs::read(name).unwrap()).unwrap();
   diff_file.reverse();
@@ -78,4 +105,28 @@ pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::
     diff.push((operation, position, raw_size, raw, subraw));
   }
   diff
+}
+
+pub fn debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
+  for operation in diff {
+    let op_name = match operation.0 {
+      0 => "substitution",
+      1 => "add",
+      _ => "delete"
+    };
+    println!("{}\n{:?}\n{:?}", op_name, operation.3, operation.4);
+  }
+}
+
+pub fn debug_u8_to_char(diff: &Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
+    for operation in diff {
+        let op_name = match operation.0 {
+            0 => "substitution",
+            1 => "add",
+            _ => "delete"
+        };
+        let source: Vec<char> = operation.3.iter().map(|u| *u as char).collect();
+        let target: Vec<char> = operation.4.iter().map(|u| *u as char).collect();
+        println!("{}\n{:?}\n{:?}", op_name, source, target);
+    }
 }
