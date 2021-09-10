@@ -1,6 +1,8 @@
 use std::io::Write;
 use std::vec::Vec;
 
+type Diff<T> = Vec<(u8, u32, u32, Vec<T>, Vec<T>)>;
+
 fn get_bytes_in(number: u32) -> Vec::<u8> {
   let mut ret = Vec::new();
   for byte in number.to_be_bytes() {
@@ -11,7 +13,7 @@ fn get_bytes_in(number: u32) -> Vec::<u8> {
   ret
 }
 
-pub fn write(name: &str, diff: Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
+pub fn write(name: &str, diff: Diff<u8>) {
   let mut res = std::vec::Vec::new();
   for operation in diff.iter() {
     let mut description = operation.0 as u8;
@@ -35,10 +37,10 @@ pub fn write(name: &str, diff: Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
     }
   }
   let mut file = std::fs::File::create(name).unwrap();
-  file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
+  file.write_all(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
 }
 
-pub fn _write_char(name: &str, diff: Vec<(u8, u32, u32, Vec<&str>, Vec<&str>)>) {
+pub fn _write_char(name: &str, diff: Diff<&str>) {
   let mut res = std::vec::Vec::new();
   for operation in diff.iter() {
     let mut description = operation.0 as u8;
@@ -62,10 +64,10 @@ pub fn _write_char(name: &str, diff: Vec<(u8, u32, u32, Vec<&str>, Vec<&str>)>) 
     }
   }
   let mut file = std::fs::File::create(name).unwrap();
-  file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
+  file.write_all(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
 }
 
-pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::vec::Vec<u8>)> {
+pub fn read(name: &str) -> Diff<u8> {
   let mut diff_file = snap::raw::Decoder::new().decompress_vec(&std::fs::read(name).unwrap()).unwrap();
   diff_file.reverse();
   let mut diff = Vec::new();
@@ -107,7 +109,7 @@ pub fn read(name: &str) -> std::vec::Vec<(u8, u32, u32, std::vec::Vec<u8>, std::
   diff
 }
 
-pub fn _debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
+#[allow(clippy::all)] pub fn _debug<T: std::fmt::Debug>(diff: &Diff<T>) {
   for operation in diff {
     let op_name = match operation.0 {
       0 => "substitution",
@@ -118,7 +120,7 @@ pub fn _debug<T: std::fmt::Debug>(diff: &Vec<(u8, u32, u32, Vec<T>, Vec<T>)>) {
   }
 }
 
-pub fn _debug_u8_to_char(diff: &Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
+#[allow(clippy::all)] pub fn _debug_u8_to_char(diff: &Diff<u8>) {
     for operation in diff {
         let op_name = match operation.0 {
             0 => "substitution",

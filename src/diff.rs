@@ -1,6 +1,7 @@
 use std::vec::Vec;
+type Diff<T> = Vec<(u8, u32, u32, Vec<T>, Vec<T>)>;
 
-fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
+#[allow(clippy::all)] fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
     let mut distance = vec![vec![0; t.len()]; s.len()];
     let mut operation = vec![vec![0_u8; t.len()]; s.len()];
     for i in 1..s.len() {
@@ -36,7 +37,7 @@ fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
 pub fn diff<T: std::cmp::PartialEq + std::clone::Clone + std::marker::Copy>(
     source: &[T],
     target: &[T],
-) -> Vec<(u8, u32, u32, Vec<T>, Vec<T>)> {
+) -> Diff<T> {
     let o = levenstein(source, target);
     let mut i = source.len() - 1;
     let mut j = target.len() - 1;
