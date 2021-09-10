@@ -1,45 +1,57 @@
 mod diff;
 mod diffio;
 mod apply;
+use std::path::Path;
 use std::fs;
 
-fn human_readable(from: &str, to: &str) {
-    // Human readable sample
-    let a: Vec<_> = from.split("").collect();
-    let b: Vec<_> = to.split("").collect();
-    let diff = diff::diff(&a, &b);
-    diffio::write_char("diff.d", diff);
-    let diff = diffio::read("diff.d");
-    let dest: Vec::<String> = apply::apply(
-        a.join("").as_bytes().to_vec(),
-        &diff).iter().map(|u| (*u as char).to_string()
-    ).collect();
-    println!("Create diff\nfrom '{}'\nto   '{}'", from, to);
-    println!("Apply and obtain '{}'\n", dest.join(""));
+use std::path::PathBuf;
+use structopt::StructOpt;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "example", about = "An example of StructOpt usage.")]
+struct Opt {
+    #[structopt(short, long)]
+    binary: Option<bool>,
+    #[structopt(short, long)]
+    apply: Option<bool>,
+    #[structopt(parse(from_os_str))]
+    pub from: PathBuf,
+    #[structopt(parse(from_os_str))]
+    pub to: PathBuf,
+    #[structopt(parse(from_os_str))]
+    pub output: PathBuf,
 }
 
-fn binaries_files(from: &str, to: &str) {
-    println!("Binary example");
+fn apply(diff: &Path, file: &Path, is_binary: bool, output: &Path) {
+    let file = fs::read(file).unwrap();
+    let diff = diffio::read(&diff.to_string_lossy());
+    if is_binary {
+        fs::write(output, apply::apply(file, &diff)).unwrap();
+    } else {
+        let res: Vec::<String> = apply::apply(file, &diff)
+            .iter()
+            .map(|u| (*u as char).to_string())
+            .collect();
+        fs::write(output, &res.join("")).unwrap();
+    }
+}
+
+fn diff(from: &Path, to: &Path, output: &Path) {
     let first = fs::read(from).unwrap();
     let second = fs::read(to).unwrap();
-    let diff = diff::diff(&first, &second);
-    diffio::write("diff.d", diff.to_owned());
-    println!("Binary example, read file");
-    let diff = diffio::read("diff.d");
-    fs::write("dest.pack", apply::apply(first, &diff)).unwrap();
+    diffio::write(&output.to_string_lossy(), diff::diff(&first, &second));
 }
-
 
 fn main() {
-    human_readable(
-        "Je ne voudrais pas te faire perdre du temps",
-        "Je n'ai pas envie de te faire perdre ton temps precieux"
-    );
-    human_readable(
-        "Je n'ai pas envie de te faire perdre ton temps precieux",
-        "Je ne voudrais pas te faire perdre du temps"
-    );
-    // Binaries
-    binaries_files("first.pack", "second.pack");
-    binaries_files("second.pack", "first.pack");
+    let opt: Opt = Opt::from_args();
+    let is_apply = opt.apply.unwrap_or(false);
+    if is_apply {
+        let is_binary = opt.binary.unwrap_or(true);
+        apply(&opt.from, &opt.to, is_binary, &opt.output);
+    } else {
+        diff(&opt.from, &opt.to, &opt.output);
+    }
 }
+
+#[cfg(test)]
+mod tests;

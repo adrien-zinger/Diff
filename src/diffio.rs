@@ -38,7 +38,7 @@ pub fn write(name: &str, diff: Vec<(u8, u32, u32, Vec<u8>, Vec<u8>)>) {
   file.write(&snap::raw::Encoder::new().compress_vec(&res).unwrap()).unwrap();
 }
 
-pub fn write_char(name: &str, diff: Vec<(u8, u32, u32, Vec<&str>, Vec<&str>)>) {
+pub fn _write_char(name: &str, diff: Vec<(u8, u32, u32, Vec<&str>, Vec<&str>)>) {
   let mut res = std::vec::Vec::new();
   for operation in diff.iter() {
     let mut description = operation.0 as u8;
