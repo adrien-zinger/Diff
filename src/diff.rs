@@ -1,16 +1,16 @@
 use std::vec::Vec;
 type Diff<T> = Vec<(u8, u32, u32, Vec<T>, Vec<T>)>;
 
-#[allow(clippy::all)] fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
+fn levenstein<T: std::cmp::PartialEq>(s: &[T], t: &[T]) -> Vec<Vec<u8>> {
     let mut distance = vec![vec![0; t.len()]; s.len()];
     let mut operation = vec![vec![0_u8; t.len()]; s.len()];
-    for i in 1..s.len() {
+    (1..s.len()).for_each(|i| {
         distance[i][0] = i;
-    }
+    }); 
     for j in 1..t.len() {
         distance[0][j] = j;
     }
-    for j in 1..t.len() {
+    (1..t.len()).for_each(|j| {
         for i in 1..s.len() {
             let substitution_cost = if s[i] == t[j] { 0 } else { 1 };
             let deletion = distance[i - 1][j] + 1;
@@ -30,7 +30,7 @@ type Diff<T> = Vec<(u8, u32, u32, Vec<T>, Vec<T>)>;
                 substitution
             }
         }
-    }
+    });
     operation
 }
 

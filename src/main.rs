@@ -1,3 +1,4 @@
+#![feature(test)]
 mod diff;
 mod diffio;
 mod apply;

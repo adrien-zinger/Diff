@@ -1,3 +1,6 @@
+extern crate test;
+use test::Bencher;
+
 use super::*;
 use std::fs;
 
@@ -21,7 +24,7 @@ fn binaries_files(from: &str, to: &str) {
   let first = fs::read(from).unwrap();
   let second = fs::read(to).unwrap();
   let diff = diff::diff(&first, &second);
-  diffio::write("diff.d", diff.to_owned());
+  diffio::write("diff.d", diff);
   println!("Binary example, read file");
   let diff = diffio::read("diff.d");
   fs::write("dest.pack", apply::apply(first, &diff)).unwrap();
@@ -40,4 +43,14 @@ fn run_tests() {
   // Binaries
   binaries_files("first.pack", "second.pack");
   binaries_files("second.pack", "first.pack");
+}
+
+#[bench]
+fn benchmark(b: &mut Bencher) {
+  b.iter(|| {
+    let n = test::black_box(10);
+    (0..n).for_each(|_| {
+      binaries_files("first.pack", "second.pack")
+    });
+  });
 }
